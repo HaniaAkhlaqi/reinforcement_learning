@@ -1,0 +1,11 @@
+How does stochasticity affect the number of iterations required, and the resulting policy? 
+
+We know that the agent's actions always lead to the expected state in a deterministic environment. Equivalently in the stochastic environment the agent's actions might not always lead to the intended state due to randomness in the environment.
+
+policy iteration:
+In deterministic environment the agent didn't reach a terminal state in 100 steps. And the resulting policy has all “left” movement as action. 
+In stochastic environment the agent only took “left” action and hit a hole which resulted in the episode terminated prematurely (fewer steps). 
+
+value iteration:
+In the deterministic environment the output result shows episode reward = 1 meaning the agent successfully reached the goal state in exactly 6 steps before hitting a hole. Also the policy shows different actions in each state. 
+The agent received a reward of 1 for reaching the goal again in stochastic environment. The algorithm converges in random steps sometime more than 6 sometimes less But the policy still shows different actions. 

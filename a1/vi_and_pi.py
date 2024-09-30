@@ -1,7 +1,7 @@
 ### MDP Value Iteration and Policy Iteration
 
 import numpy as np
-import gym
+import gym #OpenAI gym library for RL env
 import time
 from lake_envs import *
 
@@ -32,7 +32,8 @@ the parameters P, nS, nA, gamma are defined as follows:
 		Discount factor. Number in range [0, 1)
 """
 
-def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
+#def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
+def policy_evaluation(P, nS, value_function, policy, gamma=0.9, tol=1e-3): 
 	"""Evaluate the value function from a given policy.
 
 	Parameters
@@ -50,17 +51,24 @@ def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
 		The value function of the given policy, where value_function[s] is
 		the value of state s
 	"""
-
-	value_function = np.zeros(nS)
+	value_function = np.zeros(nS, dtype=int) # Initialize value function to zeros
 
 	############################
 	# YOUR IMPLEMENTATION HERE #
-
+	while True: #loop until convergence 
+		new_val_function = np.copy(value_function) # keep track of the new value function
+		for s, a in enumerate(policy): # Iterate over all states and their corresponding actions
+			prob, next_state, reward, terminal = P[s][a][0] # Get transition info
+			new_val_function[s] = reward + gamma * prob * value_function[next_state] # Update the value function using the Bellman Expectation Equation
+		value_change = np.sum(np.abs(value_function - new_val_function))  # Calculate the maximum change in value function
+		value_function = new_val_function # Update the value function with the new values
+		if value_change < tol:  # Check for convergence
+			break
 	############################
-	return value_function
+	return value_function #return evaluated value function
 
 
-def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
+def policy_improvement(P, nS, nA, value_function, policy, gamma=0.9):
 	"""Given the value function from policy improve the policy.
 
 	Parameters
@@ -80,13 +88,18 @@ def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
 		given value function.
 	"""
 
-	new_policy = np.zeros(nS, dtype='int')
+	new_policy = np.zeros(nS, dtype='int')  # Create a new copy of the policy
 
 	############################
 	# YOUR IMPLEMENTATION HERE #
-
+	for s in range(nS): # Loop over each state
+		action_reward = [] # List to hold the expected value for each action
+		for a in range(nA): # Loop over each action
+			prob, next_state, reward, terminal = P[s][a][0] #Getting transition info
+			action_reward.append(reward + gamma * prob * value_function[next_state]) # Calculate expected value
+		new_policy[s] = np.argmax(action_reward) # Update the policy with the best action
 	############################
-	return new_policy
+	return new_policy # Improved policy
 
 
 def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
@@ -112,9 +125,15 @@ def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
 
 	############################
 	# YOUR IMPLEMENTATION HERE #
-
+	while True:
+		value_function = policy_evaluation(P, nS, policy, value_function, gamma, tol) # Evaluate the policy
+		new_policy = policy_improvement(P, nS, nA, value_function, policy, gamma) #Improve the policy 
+		policy_change = (new_policy != policy).sum() # Show the number of states where policy changed
+		policy = new_policy # Update the policy
+		if policy_change == 0: # If no changes, break the loop
+			break
 	############################
-	return value_function, policy
+	return value_function, policy #returning the value function and optimal policy
 
 def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 	"""
@@ -138,9 +157,27 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 	policy = np.zeros(nS, dtype=int)
 	############################
 	# YOUR IMPLEMENTATION HERE #
+	while True:
+		new_val_function = np.copy(value_function) #keep track of the new value function
+		for s in range(nS): #Loop over each state
+			action_reward = [] #List to store action values
+			for a in range(nA): #Loop over each action
+				prob, next_state, reward, terminal = P[s][a][0] #get the transition info
+				action_reward.append(reward + gamma * prob * new_val_function[next_state]) #Calculate expected value 
+			new_val_function[s] = np.max(action_reward) #update with the maximum value 
+		value_change = np.sum(np.abs(value_function - new_val_function))
+		value_function = new_val_function
+		if value_change < tol:
+			break
 
+	for s in range(nS): #Loop to determine best policy
+		action_reward = [] #To hold values again
+		for a in range(nA): #Loop over all actions
+			prob, next_state, reward, terminal = P[s][a][0] #get transition info
+			action_reward.append(reward + gamma * prob * new_val_function[next_state]) #calculate expected value
+		policy[s] = np.argmax(action_reward) #Set the best action for the policy
 	############################
-	return value_function, policy
+	return value_function, policy 
 
 def render_single(env, policy, max_steps=100):
   """
@@ -179,8 +216,8 @@ def render_single(env, policy, max_steps=100):
 if __name__ == "__main__":
 
 	# comment/uncomment these lines to switch between deterministic/stochastic environments
-	env = gym.make("Deterministic-4x4-FrozenLake-v0")
-	# env = gym.make("Stochastic-4x4-FrozenLake-v0")
+	#env = gym.make("Deterministic-4x4-FrozenLake-v0")
+	env = gym.make("Stochastic-4x4-FrozenLake-v0")
 
 	print("\n" + "-"*25 + "\nBeginning Policy Iteration\n" + "-"*25)
 
