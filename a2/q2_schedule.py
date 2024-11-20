@@ -33,7 +33,10 @@ class LinearSchedule(object):
         """
         ##############################################################
         ################ YOUR CODE HERE - 3-4 lines ##################
-        pass
+        if t >= self.nsteps:
+                self.epsilon = self.eps_end
+        else:
+            self.epsilon = self.eps_begin - (t / self.nsteps) * (self.eps_begin - self.eps_end)
         ##############################################################
         ######################## END YOUR CODE ############## ########
 
@@ -76,7 +79,11 @@ class LinearExploration(LinearSchedule):
         """
         ##############################################################
         ################ YOUR CODE HERE - 4-5 lines ##################
-        pass
+        #pass
+        if np.random.rand() < self.epsilon:
+            return self.env.action_space.sample()
+        else:
+            return best_action
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -116,8 +123,12 @@ def your_test():
     """
     Use this to implement your own tests if you'd like (not required)
     """
-    pass
-
+    #pass
+    env = EnvTest((5, 5, 1))
+    exp_strat = LinearExploration(env, 1, 0, 10)
+    exp_strat.update(0)
+    assert exp_strat.epsilon == 1, "Test 4 failed: Epsilon should be equal to eps_begin at t=0."
+    print("Test4: ok")
 
 if __name__ == "__main__":
     test1()

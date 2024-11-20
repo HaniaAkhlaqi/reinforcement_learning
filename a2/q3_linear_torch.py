@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from torch.tensor import Tensor
+from torch import Tensor
 from utils.test_env import EnvTest
 from core.deep_q_learning_torch import DQN
 from q2_schedule import LinearExploration, LinearSchedule
@@ -33,7 +33,8 @@ class Linear(DQN):
 
         ##############################################################
         ################ YOUR CODE HERE (2 lines) ##################
-
+        self.q_network = nn.Linear(state_dim, num_actions)
+        self.target_network = nn.Linear(state_dim, num_actions)
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -59,7 +60,9 @@ class Linear(DQN):
 
         ##############################################################
         ################ YOUR CODE HERE - 3-5 lines ##################
-
+        state = torch.flatten(state, start_dim=1)  # Flatten the state to fit linear layer
+        network = getattr(self, network)  # Select the network (q_network or target_network)
+        out = network(state)  # Forward pass
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -83,7 +86,7 @@ class Linear(DQN):
 
         ##############################################################
         ################### YOUR CODE HERE - 1-2 lines ###############
-
+        self.target_network.load_state_dict(self.q_network.state_dict())
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -123,7 +126,11 @@ class Linear(DQN):
 
         ##############################################################
         ##################### YOUR CODE HERE - 3-5 lines #############
-
+        actions = actions.to(torch.int64) ## actions in type int64 (torch.long)
+        q_selected = q_values.gather(1, actions.unsqueeze(-1)).squeeze(-1)# Q(s, a) for the actions taken
+        q_next = torch.max(target_q_values, dim=1)[0]# max_a' Q_target(s', a')
+        q_samp = rewards + (1 - (done_mask.float())) * gamma * q_next # Bellman equation
+        loss = F.mse_loss(q_selected, q_samp) # MSE loss
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -140,7 +147,7 @@ class Linear(DQN):
         """
         ##############################################################
         #################### YOUR CODE HERE - 1 line #############
-
+        self.optimizer = torch.optim.Adam(self.q_network.parameters(), lr=self.config.lr_begin)
         ##############################################################
         ######################## END YOUR CODE #######################
 
