@@ -69,7 +69,13 @@ class PolicyGradient(object):
         """
         #######################################################
         #########   YOUR CODE HERE - 8-12 lines.   ############
-        
+        network = build_mlp(self.observation_dim, self.action_dim, self.config.n_layers, self.config.layer_size)
+        network.to(device)
+        if self.discrete:
+            self.policy = CategoricalPolicy(network)
+        else:
+            self.policy = GaussianPolicy(network, self.action_dim)
+        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
         #######################################################
         #########          END YOUR CODE.          ############
 
@@ -185,7 +191,11 @@ class PolicyGradient(object):
             rewards = path["reward"]
             #######################################################
             #########   YOUR CODE HERE - 5-10 lines.   ############
-            
+            returns = []
+            G = 0
+            for reward in reversed(rewards):
+                G = reward + self.config.gamma * G
+                returns.insert(0, G)
             #######################################################
             #########          END YOUR CODE.          ############
             all_returns.append(returns)
@@ -210,7 +220,8 @@ class PolicyGradient(object):
         """
         #######################################################
         #########   YOUR CODE HERE - 1-2 lines.    ############
-        
+        mean, std = advantages.mean(), advantages.std()
+        normalized_advantages = (advantages - mean) / std       
         #######################################################
         #########          END YOUR CODE.          ############
         return normalized_advantages
@@ -261,8 +272,12 @@ class PolicyGradient(object):
         advantages = np2torch(advantages)
         #######################################################
         #########   YOUR CODE HERE - 5-7 lines.    ############
-        
-        #######################################################
+        log_probs = self.policy.action_distribution(observations).log_prob(actions)
+        loss = -(log_probs * advantages).mean()
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+            #######################################################
         #########          END YOUR CODE.          ############
 
     def train(self):
